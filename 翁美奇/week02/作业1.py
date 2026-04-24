@@ -20,17 +20,21 @@ VEC_LEN = 10   # 固定向量长度，类别数 = VEC_LEN
 class TorchModel(nn.Module):
     def __init__(self, input_size):
         super(TorchModel, self).__init__()
-        self.linear = nn.Linear(input_size, VEC_LEN)  # 线性层，输入 input_size 个特征，输出 VEC_LEN 个特征
+        self.hidden = nn.Linear(input_size, 128) # 隐藏层
+        self.relu = nn.ReLU()
+        self.output = nn.Linear(128, VEC_LEN)  # 线性层
+        
         self.loss = nn.functional.cross_entropy  # loss函数采用交叉熵损失
 
     def forward(self, x, y=None):
-        logits = self.linear(x)             # (batch_size, VEC_LEN)
+        x = self.relu(self.hidden(x)) # 隐藏层 + ReLU
+        logits = self.output(x)  # 输出层（未归一化得分
         if y is not None:
             return self.loss(logits, y)     # 训练时返回损失
         else:
-            return torch.softmax(logits, dim=1)   # 预测时返回概率
-
-# ok 生成一个样本, 样本的生成方法，代表了我们要学习的规律
+            # 预测时返回概率，dim=1：对每一行做 softmax，结果每一行的概率和为 1，dim=0：对每一列
+            return torch.softmax(logits, dim=1) 
+# 生成一个样本, 样本的生成方法，代表了我们要学习的规律
 # 生成一个随机向量，哪一维数字最大就属于第几类
 def build_sample():
     feature = np.random.random(VEC_LEN)          # 随机向量
